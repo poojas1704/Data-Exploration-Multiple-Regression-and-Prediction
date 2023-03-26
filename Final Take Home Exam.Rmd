@@ -1,0 +1,347 @@
+---
+title: "Final take-home exam"
+author: "Pooja Sadarangani"
+date: "2022-12-08"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+#1 Data exploration and multiple regression (90pt)
+
+## 1.1 Explore life expectancy (50pt)
+
+### 1. (2pt) Explain what is life expectancy. Here we talk about period life expectancy at birth, not cohort life expectancy.
+
+### LEFT Ans. Life expectancy is a statistical measure of how long an organism is expected to live based on its birth year and other factors such as age and gender.
+
+### 2. (6pt) Load and clean the data–remove all cases with missing life expectancy, year and country name or code. You may have to return here later to improve cleaning if you discover more issues below. How many good cases do we have?Explain what steps you do, and in case the task is ambiguous, explain why you take exactly these steps too.
+```{r}
+library(dplyr)
+library(tidyverse)
+#Loading dataset
+
+gmdata <- read.delim("gapminder.csv.bz2")
+#view(gmdata)
+
+#General Sanity Check
+dim(gmdata)
+nrow(gmdata)
+colnames(gmdata)
+
+gmdata <- rename(gmdata, year="time")
+#gmdata <- gmdata %>% mutate (year==time)
+
+colnames(gmdata)
+
+# Check for NA values
+cat("The total number of NA values in the dataset are:",sum(is.na(gmdata)))
+cat("The total number of NA values in column lifeExpectancy are:",sum(is.na(gmdata$lifeExpectancy)))
+cat("The total number of NA values in column iso2 are:",sum(is.na(gmdata$iso2)))
+cat("The total number of NA values in column iso3 are:",sum(is.na(gmdata$iso3)))
+cat("The total number of NA values in column name are:",sum(is.na(gmdata$gmdata$name)))
+cat("The total number of NA values in column name are:",sum(is.na(gmdata$year)))
+
+any(is.na(gmdata$lifeExpectancy) | is.na(gmdata$iso3) | is.na(gmdata$name) | is.na(gmdata$year) | is.na(gmdata$iso2))
+
+gmdata <- filter(gmdata, is.na(gmdata$lifeExpectancy) == FALSE)
+gmdata <- filter(gmdata, is.na(gmdata$iso2) == FALSE)
+gmdata <- filter(gmdata, is.na(gmdata$iso3) == FALSE)
+gmdata <- filter(gmdata, is.na(gmdata$name) == FALSE)
+gmdata <- filter(gmdata, is.na(gmdata$year) == FALSE)
+gmdata <- filter(gmdata, name != "")
+
+# Verifying whther NA rows have been dropped successfully
+cat("The total number of NA values in column lifeExpectancy are:",sum(is.na(gmdata$lifeExpectancy)))
+cat("The total number of NA values in column iso2 are:",sum(is.na(gmdata$iso2)))
+cat("The total number of NA values in column iso3 are:",sum(is.na(gmdata$iso3)))
+cat("The total number of NA values in column name are:",sum(is.na(gmdata$gmdata$name)))
+cat("The total number of NA values in column name are:",sum(is.na(gmdata$year)))
+
+cat("The total number of good cases after cleaning the data is ", nrow(gmdata))
+```
+
+### 3. (6pt) Now it is time to do some brief exploration:
+###(a) How many countries do we have in these data?
+###(b) What is the first and last year with valid life expectancy data?
+###(c) What is the lowest and highest life expectancy values? Which country/year do they correspond to?
+###(d) If you did this correctly, you see that the shortest life expectancy corresponds to a well-known event. What is the event? (You may consult wikipedia if you do not know).
+
+### (a) Number of countries in the dataset
+```{r}
+cat("The number of countries in the dataset are ", length(unique(gmdata$name)))
+```
+
+### (b) First and Last year with valid expectancy
+```{r}
+cat("First year with valid life expectancy is ", min(gmdata$year))
+cat("Last year with valid life expectancy is ", max(gmdata$year))
+```
+
+### (c) Lowest and Highest Life Expectancy with their corresponding countries and year
+```{r}
+lowest <- filter(gmdata, lifeExpectancy == min(lifeExpectancy))
+cat("Lowest Life Expectancy is ", min(gmdata$lifeExpectancy), "and corresponding country is ", lowest$name, " and corresponding year is ", lowest$year)
+
+highest <- filter(gmdata, lifeExpectancy == max(lifeExpectancy))
+cat("Highest Life Expectancy is ", max(gmdata$lifeExpectancy), "and corresponding country is ", highest$name, " and corresponding year is ", highest$year)
+```
+
+### (d) The shortest life expectancy corresponds to the Cambodia Genocide event.
+
+### 4. (10pt) Next, lets plot the life expectancy over time for all countries (there are many of them).
+### Make a plot where you show life expectancy in each country versus time. Highlight the U.S., South Korea, Cambodia, and China on this graph.
+### Choose yourself a few additional countries, and explain why do you think it is interested to look at those countries.
+
+```{r}
+
+countries <- c("Cambodia", "Korea, Republic of","United States of America","China", "Mali","Rwanda" ,"Yemen" ,"Japan" ,"Singapore")
+
+gmdatacountry <- filter(gmdata, name %in% countries)
+#head(gmdatacountry)
+
+cam <- filter(gmdata, name=="Cambodia")
+sk <- filter(gmdata, name=="Korea, Republic of")
+us <- filter(gmdata, name=="United States of America")
+china <- filter(gmdata, name=="China")
+mali <- filter(gmdata, name=="Mali")
+rwanda <- filter(gmdata, name=="Rwanda")
+yemen <- filter(gmdata, name=="Yemen")
+jap <- filter(gmdata, name=="Japan")
+sing <- filter(gmdata, name=="Singapore")
+
+bel <- filter(gmdata, lifeExpectancy<30)
+#unique(bel$name)
+
+gre <- filter(gmdata, lifeExpectancy>83)
+#unique(gre$name)
+library(ggplot2)
+library(ggrepel)
+
+ggplot(data=gmdata, mapping = aes(x=year, y=lifeExpectancy)) +
+  geom_line(aes(group=name),color = "grey", alpha=0.5) +
+  geom_line(data = gmdatacountry, aes(group=name, color=name), alpha=0.5 ) +
+  labs(title = "Life Expectancy VS Time(years)")
+
+```
+### I have chosen Mali, Yemen, and Rwanda as additional countries as all three have them had really low life expectancy (<30) at some point of time. ALong with this, I have also chosen Japan and Singapore as they had really high life expectancy at some point of time (>83)
+
+### 5. (8pt) Explain what do you see on the graph. What is the overall picture? How do the selected countries behave? Anything else interesting you see?
+
+### Ans. Overall, the life expectancy has increased for all countries from 1960 to 2020. However, Cambodia and Rwanda had major drops in their life expectancy and today, they still have low life expectance as compared to countries like Japan. Japan, US, and Singapore have consistantly had high life expectancy, which seems to be growing with time.
+
+
+### 6. (10pt) Now, let’s look at how are life expectancy and fertility related. Make a fertility rate versus life expectancy plot of all countries with selected countries highlighted. Use arrows to mark which way the time goes on the figure.
+
+```{r}
+ggplot(gmdata, aes(y = fertilityRate, x = lifeExpectancy, group = name)) +
+    geom_path(color = "gray", alpha=0.4, arrow = arrow(length=unit(0.30,"cm"), ends="last", type = "closed")) +
+    geom_path(data = gmdatacountry, aes(group =name,color=name), arrow = arrow(length=unit(0.30,"cm"), ends="last", type = "closed")) +
+    labs(title = "fertilityRate VS Life Expectancy")
+  
+  
+```
+
+### 7. (8pt) Comment the results. Where is the world going? Where are the highlighted countries going?
+
+### Ans: The world is moving towards low fertility rate and greater life expectancy.
+## 1.2 Model life expectancy (40pt)
+
+### 1. (2pt) Display the distribution of life expectancy. How does it look like? Does it suggest you should use log-transformation? Explain!
+
+```{r}
+ggplot(gmdata, aes(x=lifeExpectancy)) +
+    geom_histogram(binwidth=1, colour="black", fill="skyblue")
+```
+
+### The distribution of life expectancy is left-skewed. This suggests that we should use log transformation to transform skewed data to approximately conform to normality.
+### Reference: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4120293/#:~:text=The%20log%20transformation%20is%2C%20arguably,normal%20or%20near%20normal%20distribution.
+
+### 2. (4pt) Create a model where you explain life expectancy with just time
+### life expectancyt = B0 + B1 · t
+### where t is time (year). Use year-2000 instead of just year for time.
+
+```{r}
+updated_gmdata <- gmdata
+updated_gmdata <- updated_gmdata %>% mutate(year = year-2000)
+#head(updated_gmdata)
+model1 <- lm(lifeExpectancy ~ year, data=updated_gmdata, )
+summary(model1)
+```
+
+### 3. (4pt) Why does year-2000 make more sense?
+
+### Ans. year2000 makes more sense in order to achieve the line intercept. Since year cannot be zero, finding the value of the intercept is challenging. Thus, we convert the year to display year-2000 so that the predictor variable (year) can take zero value. 
+
+### 4. (4pt) Interpret the results (both B0 and B1).
+
+### Ans. B0 is the intercept of the line formulated by the model. The value of inctercept (B0) i.e 67.430274 suggests that when time (year-2000) = 0, the life expectancy value is 67.430274.
+### B1 is the slopeor the effect of the line formulated by the model. The value of slope (B1) i.e 0.308675 suggests that a positive correlation exists between life expectancy and time where if time increases by 1 unit, life expectancy increases by 0.308675.
+
+### 5. (4pt) Now let’s move to multiple regression: estimate the model where you also add the continent (variable region):
+#life expectancyrt = B0 + B1 · t + B1 · regionr
+
+```{r}
+unique(gmdata$region)
+model2 <- lm(lifeExpectancy ~ year + region, data=updated_gmdata)
+summary(model2)
+```
+
+### 6. (4pt) Interpret the results. What do the region dummies mean? What is the reference category? How big is the time trend? Is it statistically significant? Is it different from what you saw in the previous model?
+
+### The region dummies indicate that the variable "region" is categorical.
+### Reference category is Africa
+### The regression coefficient of year (time trend) is 0.13778. It is statistically significant at 0.1%. The significance of the variable is same however, it's coefficient has reduced a bit from 0.308 to 0.13 which suggests that it's effect on lifeExpectancy variable has reduced. lifeExpectancy and Year are still positively correlated.
+
+
+### 7. (4pt) As a final result, let’s add two additional variables to the model: log of GDP per capita, and fertility rate. Estimate such a model.
+```{r}
+model3 <- lm(lifeExpectancy ~ year + region + log(GDP_PC) + fertilityRate, data=updated_gmdata)
+summary(model3)
+```
+
+### 8. (5pt) What do the estimated parameters (betas) for the two new variables tell you?
+### Ans.  The estimated parameters (betas) for the two new variables suggest that:
+### lifeExpectancy is positively correlated to log(GDP_PC) where one unit increase in log(GDP_PC) causes 2.49027 unit increase in lifeExpectancy
+### lifeExpectancy is negatively correlated to fertilityRate where one unit increase in fertilityRate causes 2.23512 unit decrease in lifeExpectancy.
+### Both new variables are statistically significant and have made the model better as the R-square value has increased.
+
+### 9. (5pt) If you did it correctly, you noticed that Europe was the leading region in Question 5. But now Americas is leading the pack in terms of the value of the region dummy–the dummy for Europe is only 4th largest. Explain why adding additional variables made the ranking of continents to look different.
+
+### Adding additional variables made the ranking of continents to look different because both the variables are statistically significant at 1% and had an effect on the lifeExpectancy.
+
+### 10. (4pt) Based on all the models you have done so far: which continent has the highest life expectancy? Which one the lowest?
+###Note: you are welcome to check the group averages too if you wish, but the question asks about the models. See we expect some argumentation based on the models.
+
+### Ans. Based on the last model, America had the highest life expectancy.I am basing my answer on the last model as it was the best, which we can tell by looking at the R square. 
+### Africa has the lowest lifeExpectancy since it is the reference category. 
+
+# 2 Find Cheap Restaurants (50pt)
+
+## 1. (5pt) Load the data and perform basic sanity checks. Ensure you know the variables. Check for missings and unreasonable values and clean the data as necessary.
+
+```{r}
+rest <- read.delim("nyc-italian-cheap.csv.bz2")
+dim(rest)
+colnames(rest)
+#view(rest)
+
+any(is.na(rest$Restaurant) | is.na(rest$Food) | is.na(rest$Decor) | is.na(rest$Service) | is.na(rest$East) | is.na(rest$Cheap))
+
+any(rest$Food > 30 | rest$Food <0)
+any(rest$Decor > 30 | rest$Decor <0)
+any(rest$Service > 30 | rest$Service <0)
+```
+
+## There are no missing and unreasonable values in the dataset.,
+
+## 2. (5pt) Your task is to predict if a restaurant is cheap or not. Which type of model, linear or logistic regression do you think is suitable for this task? Explain!
+
+## Logistic Regression is a more appropriate model for this task since this is classification problem where the prediction can take up only 2 values.
+
+## 3. 3. (20pt) Now build the model. Include all the variables you consider relevant for this task. Estimate the model and interpret the statistically significant results. Do your results align with common sense?Ensure you interpret the right type of effects.
+
+```{r}
+model4 <- glm(Cheap ~ Food + Decor + Service + East, data=rest, family=binomial())
+summary(model4)
+```
+
+## According to the above summary, we can make the following interpretations:
+## Statistical Significance:
+## 1. The variable 'Food' is statistically significant at 5%.
+## 2. The variable 'Decor' is statistically significant at 0.1%.
+## The variable 'Service' is not statistically significant.
+## The variable 'East' is also not statistically significant.
+## Correlation:
+## 1. The variable 'Cheap' is negatively correlated to 'Food' with. This means that as food rating increases, the restaurant becomes more expensive.
+## 2. The variable 'Cheap' is negatively correlated to 'Decor'. This means that as decor rating increases, the restaurant becomes more expensive.
+## 3. The variable 'Cheap' is positively correlated to 'East'. This means that as Service rating increases, the restaurant becomes cheaper.
+## While the correlation between variables 'Cheap' and 'Food' and 'Cheap' and decor make sense, the correlation between 'Cheap' and 'Service' does not make sense as better the service, more expensive the restaurant should be.We cannot comment on the correaltion between 'Cheap' and 'East' as I cannot comment
+
+
+## 4. (20pt) You are going out with a few friends and feeling hungry, and would like to have lunch at a not-too-expensive Italian place. You find there are two new places with the following scores and locations:
+
+```{r}
+Restaurant <- c("Assagio Ristorante", "Altura")
+Food <- c(23,18)
+Decor <- c(17,15)
+Service <- c(22, 24)
+East <- c(0,1)
+preddata <- data.frame(Restaurant, Food, Decor, Service, East)
+
+#preddata
+
+preddata <- preddata %>% mutate(pred = predict(model4, preddata))
+preddata
+preddata$pred <- ifelse(preddata$pred > 0.5, 0,1)
+preddata
+```
+
+## What does your model predict–is any of these two restaurants a cheap place? Use the model you made above to find it out.
+
+## According to my model, Assagio Ristorante is a cheaper place. Altura on the other hand, is not a cheap restaurant. 
+
+# 3 Theoretical questions (20pt)
+
+## 1. (6pt) Describe one real-life applications in which logistic regression may be useful, one in which linear regression is useful, and one in which prediction is useful. Describe the response, as well as the predictors. Explain your answer.
+
+## Real-life application of Logistic Regression: Predicting whether it will rain today or not based on various parameters
+## Real-life application of Linear Regression: Predicting the price of a houses based on factors such as sqft, number of bedrooms, location, etc.
+## Real-life application of prediction: Detecting sickness in healthcare; Predicting House Value;
+## When two suspect two variables to be causally correlated, where one variable affects the other, the affecting variable is called 'predictor' and the affected variable is called 'response'.
+## Reference: (OpenIntro Statistics Fourth Edition, David Diez)
+
+## 2. (5pt) Think about analyzing regression results. What does this mean: A coefficient is statistically significant at 5% confidence level?
+
+## When a coefficient is statistically significant at 5% confidence level, it indicates strong evidence against null hypothesis that there is less that there is less than 5% probability of the results being random and by chance. 
+## Reference: https://hbr.org/2016/02/a-refresher-on-statistical-significance, https://www.simplypsychology.org/p-value.html#:~:text=A%20p%2Dvalue%20less%20than,and%20accept%20the%20alternative%20hypothesis.
+
+## 3. (9pt) You are network security manager. Your network has recently suffered from various attacks and intrusions and now you are evaluating to introduce a new login method, either method L1 or method L2. The login will distinguish between approved users (A) and intruders (I) based on passwords, biometrics and other data. The small-scale evaluation you did produced the following results:
+## (a) (4pt) Show the confusion matrices for methods L1 and L2. Do it as markdown tables.
+
+## Confusion Matrix for L1:
+
+|               | Actual Login (A) | Actual Login (I) |
+| :------------ | :--------------- | :--------------- |
+| Predicted (A) | 3                | 3                |
+| Predicted (I) | 0                | 4                |
+
+## Confusion Matrix for L2:
+
+|               | Actual Login (A) | Actual Login (I) |
+| :------------ | :--------------- | :--------------- |
+| Predicted (A) | 2                | 0                |
+| Predicted (I) | 1                | 7                |
+
+## (b) (5pt) Compute accuracy, precision, recall for both models.
+## To stay on the same page, let’s take “I” as positive.
+
+## For L1 Model:
+
+## Accuracy = ((TP + TN)/(TP + TN + FP + FN)) * 100 = ((4 + 3)/(4 + 3 + 3 + 0)) * 100 = 70
+## Accuracy of L1 model is 70%
+
+## Precision = (TP)/(TP + FP) = (4)/(4 + 0) = 1
+## Precision of L1 model is 1
+
+## Recall = (TP)/(TP + FN) = (4)/(4 + 3) = 0.57
+## Recall of L2 model is 0.57
+
+## For L2 Model:
+
+## Accuracy = ((TP + TN)/(TP + TN + FP + FN)) * 100 = ((7 + 2)/(7 + 2 + 1 + 0)) * 100 = 90
+## Accuracy of L2 model is 90%
+
+## Precision = (TP)/(TP + FP) = (7)/(7 + 1) = 0.875
+## Precision of L2 model is 1
+
+## Recall = (TP)/(TP + FN) = (7)/(7 + 0) = 1
+
+## (c) (6pt) Which login method, L1 or L2 will you recommend the management to implement?
+## Explain your reasoning.   
+## When talking about security, it is most crucial to ensure that intruders are not given access.From the confusion matrix, I can tell that method L2 correctly identified all intruders as intruders while method L1 identified 3 intruders as approved, which is not at all good from the security standpoint. Thus model L2 is better. Additionally, the accuracy of model L2 is much better than that of L1.
